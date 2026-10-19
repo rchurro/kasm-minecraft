@@ -1,0 +1,25 @@
+# PRIVATE ONLY: the public image plus pre-baked Minecraft game files (client,
+# libraries, assets) and a ready instance, so sessions skip Prism's long first
+# download. These are Mojang's files and may not be redistributed: build this
+# yourself and load it into your own Kasm. Never push it to a public registry.
+ARG BASE=ghcr.io/rchurro/kasm-minecraft:1.19.0
+FROM ${BASE}
+USER root
+ENV HOME=/home/kasm-default-profile
+
+ARG MC_VERSION=latest
+ARG JAVA_PATH=/usr/lib/jvm/java-25-openjdk-amd64/bin/java
+COPY bake.py /tmp/bake.py
+# Assets/libraries live in /opt/minecraft, symlinked into the profile so Kasm
+# doesn't copy ~600 MB into $HOME per session.
+RUN P=$HOME/.local/share/PrismLauncher \
+ && python3 /tmp/bake.py /opt/minecraft "$MC_VERSION" "$JAVA_PATH" \
+ && mv /opt/minecraft/instances $P/instances \
+ && mv /opt/minecraft/metacache $P/metacache \
+ && ln -s /opt/minecraft/assets $P/assets \
+ && ln -s /opt/minecraft/libraries $P/libraries \
+ && chown -R 1000:0 /opt/minecraft $P \
+ && rm /tmp/bake.py
+
+ENV HOME=/home/kasm-user
+USER 1000

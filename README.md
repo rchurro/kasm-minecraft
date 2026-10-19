@@ -16,7 +16,9 @@ ghcr.io/rchurro/kasm-minecraft:1.19.0
 - No Minecraft game files are included. Prism downloads them on first launch, and you
   need a Microsoft account that owns Minecraft: Java Edition.
 
-Rebuilt weekly with the latest Prism Launcher, VirtualGL and Kasm base-image updates.
+Checked daily and rebuilt only when something changes: a new Prism Launcher or VirtualGL
+release, a new Kasm base image, or a change in this repo. A monthly rebuild picks up Ubuntu
+security updates.
 
 ## Install
 
@@ -58,14 +60,18 @@ at every start, because an existing persistent profile keeps its own Prism confi
 docker build -t kasm-minecraft .
 ```
 
-Build args: `PRISM_VERSION`, `VGL_VERSION`, `JAVA_PATH`, and the two below.
+Build args: `PRISM_VERSION`, `VGL_VERSION`, `JAVA_PATH`.
 
 ### Private variant with pre-baked game files
 
-`--build-arg BAKE=true` (optionally `--build-arg MC_VERSION=<version>`, default `latest`)
-runs `bake.py` at build time. It downloads that release's client, libraries and assets
-into Prism's layout, seeds Prism's download cache, and creates a ready instance. Sessions
-then start without Prism's several-minute first download.
+```bash
+docker build -f Dockerfile.baked -t kasm-minecraft-baked .
+```
+
+`Dockerfile.baked` starts from the public image and runs `bake.py`, which downloads a
+Minecraft release's client, libraries and assets (`--build-arg MC_VERSION=<version>`,
+default `latest`) into Prism's layout, seeds Prism's download cache and creates a ready
+instance. Sessions then start without Prism's several-minute first download.
 
 **A baked image contains Mojang's game files, which may not be redistributed.** Build it
 yourself and load it straight into your own Kasm; never push it to a public registry.

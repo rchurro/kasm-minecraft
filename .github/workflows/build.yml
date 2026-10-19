@@ -1,45 +1,71 @@
-# Builds the public Kasm Minecraft workspace image (no game files) and pushes it to GHCR.
-# Never build BAKE=true here: a baked image contains Mojang's files and must stay private.
+# Builds the public Kasm Minecraft image (no game files) and pushes it to GHCR,
+# but only when an input changed: Prism Launcher or VirtualGL release, the Kasm
+# base image digest, or this repo. Plus a forced rebuild on the 1st of each month
+# for Ubuntu security updates. Never build Dockerfile.baked here (Mojang files).
 name: Build image
 
 on:
   push:
     branches: [main]
   schedule:
-    - cron: "0 9 * * 1" # Mondays 09:00 UTC: new Prism/VirtualGL releases + base patches
+    - cron: "0 9 * * *" # daily check; builds only if something changed
   workflow_dispatch:
 
 concurrency:
   group: build
   cancel-in-progress: false
 
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+  KASM_TAG: "1.19.0"
+  BASE: kasmweb/core-ubuntu-noble:1.19.0
+
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      IMAGE: ghcr.io/${{ github.repository }}
-      KASM_TAG: "1.19.0"
+    outputs:
+      build: ${{ steps.cmp.outputs.build }}
+      inputs: ${{ steps.cmp.outputs.inputs }}
+      prism: ${{ steps.cmp.outputs.prism }}
+      vgl: ${{ steps.cmp.outputs.vgl }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Free disk space (image is ~4.7 GB)
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-
-      - name: Resolve upstream versions
-        id: v
+      - id: cmp
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
         run: |
           gh_latest() { curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$1/releases/latest" | jq -r .tag_name; }
           PRISM=$(gh_latest PrismLauncher/PrismLauncher)
           VGL=$(gh_latest VirtualGL/virtualgl)
-          for x in "$PRISM" "$VGL"; do [ -n "$x" ] && [ "$x" != null ] || { echo "version lookup failed"; exit 1; }; done
+          BASE_DIGEST=$(skopeo inspect --raw "docker://docker.io/$BASE" | sha256sum | cut -c1-16)
+          for x in "$PRISM" "$VGL" "$BASE_DIGEST"; do [ -n "$x" ] && [ "$x" != null ] || { echo "lookup failed"; exit 1; }; done
+          INPUTS="prism=$PRISM vgl=$VGL base=$BASE_DIGEST"
+          CURRENT=$(skopeo inspect --override-arch amd64 --override-os linux "docker://$IMAGE:$KASM_TAG" 2>/dev/null | jq -r '.Labels["io.github.rchurro.inputs"] // ""' || true)
+          echo "now:       $INPUTS"; echo "published: ${CURRENT:-none}"
+          BUILD=false; WHY="no changes"
+          if [ "$EVENT" != schedule ]; then BUILD=true; WHY="$EVENT"
+          elif [ "$INPUTS" != "$CURRENT" ]; then BUILD=true; WHY="inputs changed"
+          elif [ "$(date -u +%d)" = 01 ]; then BUILD=true; WHY="monthly security rebuild"; fi
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"; echo "inputs=$INPUTS" >> "$GITHUB_OUTPUT"
           echo "prism=$PRISM" >> "$GITHUB_OUTPUT"; echo "vgl=$VGL" >> "$GITHUB_OUTPUT"
-          echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-          echo "### Prism $PRISM · VirtualGL $VGL" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Build: $BUILD ($WHY)" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$INPUTS\`" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space (image is ~4 GB)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      - id: d
+        run: echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -54,16 +80,17 @@ jobs:
           context: .
           platforms: linux/amd64
           pull: true
-          no-cache: ${{ github.event_name == 'schedule' }}
+          no-cache: true
           push: true
+          provenance: false
           build-args: |
-            BAKE=false
-            PRISM_VERSION=${{ steps.v.outputs.prism }}
-            VGL_VERSION=${{ steps.v.outputs.vgl }}
+            PRISM_VERSION=${{ needs.check.outputs.prism }}
+            VGL_VERSION=${{ needs.check.outputs.vgl }}
           tags: |
             ${{ env.IMAGE }}:${{ env.KASM_TAG }}
-            ${{ env.IMAGE }}:${{ env.KASM_TAG }}-${{ steps.v.outputs.date }}
+            ${{ env.IMAGE }}:${{ env.KASM_TAG }}-${{ steps.d.outputs.date }}
             ${{ env.IMAGE }}:latest
           labels: |
+            io.github.rchurro.inputs=${{ needs.check.outputs.inputs }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.description=Kasm workspace: Minecraft Java via Prism Launcher ${{ steps.v.outputs.prism }} (no game files)
+            org.opencontainers.image.description=Kasm workspace: Minecraft Java via Prism Launcher ${{ needs.check.outputs.prism }} (no game files)

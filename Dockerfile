@@ -2,7 +2,7 @@
 # Stock kasmweb images drop sudo, so this adds it back (passwordless) to allow
 # installing extras in a live session. Sessions are throwaway; persistence comes
 # from the workspace's persistent profile path, not the image.
-# Default build has no Minecraft game files (safe to publish); see BAKE below.
+# No Minecraft game files (safe to publish). Dockerfile.baked adds them for private use.
 FROM kasmweb/core-ubuntu-noble:1.19.0
 USER root
 
@@ -48,25 +48,6 @@ COPY mc-gpu /usr/local/bin/mc-gpu
 RUN P=$HOME/.local/share/PrismLauncher \
  && mkdir -p $P \
  && printf '[General]\nConfigVersion=1.3\nLanguage=en_US\nApplicationTheme=system\nIconTheme=pe_colored\nJavaPath=%s\nAutomaticJavaSwitch=true\nAutomaticJavaDownload=true\nWrapperCommand=/usr/local/bin/mc-gpu\n' "$JAVA_PATH" > $P/prismlauncher.cfg
-
-# Optional: pre-bake Minecraft's game files (client, libraries, assets) and a
-# ready instance so sessions skip Prism's long first download. These are Mojang's
-# files and may not be redistributed: a BAKE=true image is for PRIVATE use only,
-# never push it to a public registry. Files live in /opt/minecraft, symlinked
-# into the profile so Kasm doesn't copy ~600 MB into $HOME per session.
-ARG BAKE=false
-ARG MC_VERSION=latest
-COPY bake.py /tmp/bake.py
-RUN if [ "$BAKE" = "true" ]; then \
-      P=$HOME/.local/share/PrismLauncher \
-      && python3 /tmp/bake.py /opt/minecraft "$MC_VERSION" "$JAVA_PATH" \
-      && mv /opt/minecraft/instances $P/instances \
-      && mv /opt/minecraft/metacache $P/metacache \
-      && ln -s /opt/minecraft/assets $P/assets \
-      && ln -s /opt/minecraft/libraries $P/libraries \
-      && chown -R 1000:0 /opt/minecraft; \
-    fi \
- && rm /tmp/bake.py
 
 COPY custom_startup.sh $STARTUPDIR/custom_startup.sh
 COPY prismlauncher.desktop /usr/share/applications/prismlauncher.desktop
