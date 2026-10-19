@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
@@ -19,9 +20,16 @@ MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 ASSETS = "https://resources.download.minecraft.net"
 
 
-def get(url):
-    with urllib.request.urlopen(url, timeout=120) as r:
-        return r.read()
+def get(url, attempts=5):
+    # Mojang's CDN occasionally drops or rate-limits one of thousands of requests.
+    for i in range(attempts):
+        try:
+            with urllib.request.urlopen(url, timeout=120) as r:
+                return r.read()
+        except OSError as e:  # URLError, HTTPError, timeouts
+            if i == attempts - 1:
+                raise RuntimeError(f"download failed after {attempts} attempts: {url}: {e}") from e
+            time.sleep(2 ** i)
 
 
 def get_json(url):
