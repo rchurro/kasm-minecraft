@@ -1,12 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "docker:pinDigests"],
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests"
+  ],
   "dependencyDashboard": true,
   "customManagers": [
     {
       "customType": "regex",
       "description": "Versions in Dockerfile ARGs annotated with '# renovate:' comments",
-      "managerFilePatterns": ["/(^|/)Dockerfile[^/]*$/"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile[^/]*$/"
+      ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+ARG \\w+_VERSION=(?<currentValue>\\S+)"
       ]
@@ -14,31 +19,65 @@
   ],
   "packageRules": [
     {
+      "description": "Dockerfile.baked must follow the latest public image; pinning it would loop (every public build -> Renovate commit -> rebuild)",
+      "matchPackageNames": [
+        "ghcr.io/rchurro/kasm-minecraft"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Kasm base: digest refreshes and patch releases merge themselves",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["kasmweb/core-ubuntu-noble"],
-      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "kasmweb/core-ubuntu-noble"
+      ],
+      "matchUpdateTypes": [
+        "digest",
+        "pin",
+        "pinDigest",
+        "patch"
+      ],
       "automerge": true,
       "automergeType": "branch"
     },
     {
       "description": "Kasm minor/major (e.g. 1.20): open a PR for review, workspaces may need changes",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["kasmweb/core-ubuntu-noble"],
-      "matchUpdateTypes": ["minor", "major"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "kasmweb/core-ubuntu-noble"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
       "automerge": false
     },
     {
       "description": "Prism Launcher and VirtualGL: patch/minor merge themselves, major opens a PR",
-      "matchDatasources": ["github-releases"],
-      "matchUpdateTypes": ["patch", "minor"],
+      "matchDatasources": [
+        "github-releases"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
       "automerge": true,
       "automergeType": "branch"
     },
     {
       "description": "GitHub Actions used by the workflow",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor",
+        "digest"
+      ],
       "automerge": true,
       "automergeType": "branch"
     }
