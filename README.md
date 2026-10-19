@@ -16,9 +16,10 @@ ghcr.io/rchurro/kasm-minecraft:1.19.0
 - No Minecraft game files are included. Prism downloads them on first launch, and you
   need a Microsoft account that owns Minecraft: Java Edition.
 
-Checked daily and rebuilt only when something changes: a new Prism Launcher or VirtualGL
-release, a new Kasm base image, or a change in this repo. A monthly rebuild picks up Ubuntu
-security updates.
+Versions are pinned in the `Dockerfile` (Kasm base by digest, Prism Launcher, VirtualGL) and
+kept current by [Renovate](https://docs.renovatebot.com): it opens a PR or, for patch and
+minor updates that build cleanly, merges itself, and every merge publishes a new image.
+A monthly rebuild picks up Ubuntu security updates.
 
 ## Install
 

@@ -3,13 +3,14 @@
 # installing extras in a live session. Sessions are throwaway; persistence comes
 # from the workspace's persistent profile path, not the image.
 # No Minecraft game files (safe to publish). Dockerfile.baked adds them for private use.
-FROM kasmweb/core-ubuntu-noble:1.19.0
+FROM kasmweb/core-ubuntu-noble:1.19.0@sha256:69730b0ee6a572635fad9f8cf3ecb3d40fb86e01000f964b2dab719c664f67f4
 USER root
 
 ENV HOME=/home/kasm-default-profile
 ENV STARTUPDIR=/dockerstartup
 WORKDIR $HOME
 
+# renovate: datasource=github-releases depName=PrismLauncher/PrismLauncher
 ARG PRISM_VERSION=11.1.1
 
 # Java 21 covers 1.20.5–1.21.x, Java 25 covers 26.x; Prism downloads others on demand.
@@ -24,6 +25,7 @@ RUN apt-get update \
 
 # VirtualGL >= 3.1.5: its EGL back end fixed default-framebuffer handling that
 # left Minecraft Java black under vglrun (base image ships 3.1.3).
+# renovate: datasource=github-releases depName=VirtualGL/virtualgl
 ARG VGL_VERSION=3.1.5
 RUN curl -fsSL -o /tmp/vgl.deb \
       "https://github.com/VirtualGL/virtualgl/releases/download/${VGL_VERSION}/virtualgl_${VGL_VERSION}_amd64.deb" \
