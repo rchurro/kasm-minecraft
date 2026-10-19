@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Prism wrapper command: run the game's Java through VirtualGL when Kasm assigned
+# a GPU (KASM_EGL_CARD), so OpenGL uses the GPU instead of llvmpipe. Same
+# condition Kasm's vnc_startup.sh uses for the desktop. Without a GPU, run as-is.
+if [ -x /opt/VirtualGL/bin/vglrun ] && [ -n "$KASM_EGL_CARD" ] && [ -n "$KASM_RENDERD" ] \
+   && [ -w "$KASM_EGL_CARD" ] && [ -w "$KASM_RENDERD" ]; then
+    exec /opt/VirtualGL/bin/vglrun -d "$KASM_EGL_CARD" "$@"
+fi
+exec "$@"

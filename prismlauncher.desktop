@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Prism Launcher
+Comment=Minecraft launcher
+Exec=/usr/local/bin/prismlauncher
+Icon=/opt/prismlauncher/org.prismlauncher.PrismLauncher.png
+Terminal=false
+Categories=Game;
