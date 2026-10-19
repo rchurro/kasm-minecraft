@@ -2,7 +2,7 @@
 # libraries, assets) and a ready instance, so sessions skip Prism's long first
 # download. These are Mojang's files and may not be redistributed: build this
 # yourself and load it into your own Kasm. Never push it to a public registry.
-ARG BASE=ghcr.io/rchurro/kasm-minecraft:1.19.0
+ARG BASE=ghcr.io/rchurro/kasm-minecraft:1.19.0@sha256:aedda20afa70e3fbb041477bfb079b532fb359a662e7b6affb8302d300baa3e9
 FROM ${BASE}
 USER root
 ENV HOME=/home/kasm-default-profile
