@@ -9,17 +9,6 @@ Kasm's persistent profile.
 ghcr.io/rchurro/kasm-minecraft:1.19.0
 ```
 
-## Install in one click
-
-Add this repo's Kasm registry and the workspace comes pre-configured:
-
-1. In Kasm, go to **Admin → Workspaces → Registry** and click **Add new**.
-2. Paste `https://rchurro.github.io/kasm-registry/` and save.
-3. Find **Minecraft (Prism Launcher)** in the list and click **Install**.
-
-Then set GPU count 1, EGL and NVENC on the workspace for GPU rendering (details below).
-You need a Microsoft account that owns Minecraft: Java Edition; the game downloads on first launch.
-
 - Base: `kasmweb/core-ubuntu-noble:1.19.0`, single-application mode
 - Prism Launcher (latest at build time) with OpenJDK 21 and 25; Prism fetches others on demand
 - GPU rendering through VirtualGL ≥ 3.1.5 (see below)
@@ -31,6 +20,17 @@ Versions are pinned in the `Dockerfile` (Kasm base by digest, Prism Launcher, Vi
 kept current by [Renovate](https://docs.renovatebot.com): it opens a PR or, for patch and
 minor updates that build cleanly, merges itself, and every merge publishes a new image.
 A monthly rebuild picks up Ubuntu security updates.
+
+## Install in one click
+
+Add this repo's Kasm registry and the workspace comes pre-configured:
+
+1. In Kasm, go to **Admin → Workspaces → Registry** and click **Add new**.
+2. Paste `https://rchurro.github.io/kasm-registry/` and save.
+3. Find **Minecraft (Prism Launcher)** in the list and click **Install**.
+
+Then set GPU count 1, EGL and NVENC on the workspace for GPU rendering (details below).
+You need a Microsoft account that owns Minecraft: Java Edition; the game downloads on first launch.
 
 ## Install
 
